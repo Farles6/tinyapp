@@ -11,14 +11,14 @@ const urlDatabase = {
   '9sm5xK': 'http://www.google.com'
 };
 
-function generateRandomString(){
+function generateRandomString() {
   const chars = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-let result = '';
-for (let i = 0; i < 6; i++){
-  result += chars[Math.floor(Math.random() * chars.length)];
-}
-return result
-}
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+};
 
 
 app.get('/', (req, res) => {
@@ -46,9 +46,9 @@ app.post('/urls', (req, res) => {
 });
 
 app.get('/u/:shortURL', (req, res) => {
-const longURL = urlDatabase[req.params.shortURL]
+  const longURL = urlDatabase[req.params.shortURL]
   res.redirect(longURL);
-})
+});
 
 // Will probably get rid of this.
 // app.get('/hello', (req, res) => {
