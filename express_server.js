@@ -16,7 +16,7 @@ const urlDatabase = {
 
 //Example of how data should look
 const users = {
-  
+
 };
 
 function generateRandomString() {
@@ -88,12 +88,20 @@ app.post('/urls/:shortURL/delete', (req, res) => {
  */
 const getUser = (userId, userDb) => {
   if (!userDb[userId]) return null;
-return userDb[userId];
+  return userDb[userId];
 };
 
 const emailChecker = (email) => {
-  for (const user in users){
-    if (users[user].email === email){
+  for (const user in users) {
+    if (users[user].email === email) {
+      return true;
+    }
+  }
+  return false;
+};
+const passwordChecker = (password) => {
+  for (const user in users) {
+    if (users[user].password === password) {
       return true;
     }
   }
@@ -102,17 +110,17 @@ const emailChecker = (email) => {
 
 
 app.post('/register', (req, res) => {
-  const { email, password} = req.body 
-  if(!email) {
+  const { email, password } = req.body
+  if (!email) {
     return res.status(400).send('Need to enter an Email address.')
-  } ;
-  if (!password){
+  };
+  if (!password) {
     return res.status(400).send('Need to enter a password.')
   }
-  if (emailChecker(email))  {
+  if (emailChecker(email)) {
     return res.status(400).send('Email already exists');
   };
-  
+
   const user = generateRandomString();
   users[user] = {
     id: user,
@@ -120,20 +128,29 @@ app.post('/register', (req, res) => {
     password
   };
   res.cookie('user_id', user);
-//  console.log(users[user]);
-//  console.log(users);
- res.redirect('/urls');
-});
-
-app.post('/login', (req, res) => {
-  let user = req.cookies.user_id;
-  res.cookie('user_id', user);
   res.redirect('/urls');
 });
 
+app.post('/login', (req, res) => {
+  let id = '';
+  const { email, password } = req.body;
+  if (!emailChecker(email)) {
+    return res.status(403).send('Email not found.');
+  }
+  if (!passwordChecker(password)) {
+    return res.status(403).send('Incorrect password.');
+  }
+  for (const user in users) {
+    console.log(users[user]);
+    id = users[user].id;
+    res.cookie('user_id', users[user].id);
+    return res.redirect('urls');
+  }
+
+});
+
 app.post('/logout', (req, res) => {
-  let user = req.cookies.user_id
-  res.clearCookie('user_id', user);
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 

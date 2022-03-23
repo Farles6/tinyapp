@@ -7,17 +7,17 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
       <div class="navbar-nav">
-        <a class="nav-item nav-link" href="/urls">My URLs</a>
-        <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-        <a class="nav-item nav-link" href="/register">Register</a>
-       <% if (!user) { %>
-        <a class="nav-item nav-link" href="/login">Login</a>
-        <% } else { %>
-            <form method="POST" action="/logout">
-              Logged in as: <%= user.email %>
-                <button type='submit' class='btn btn-outline-dark'>Logout</button></form>
-            <% } %>
+        <a style="color:azure" class="nav-item nav-link" href="/urls">My URLs</a>
+        <a style="color:azure" class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
+    <% if (!user) { %>
+      <a style="color:azure" class="nav-item nav-link" href="/register">Register</a>
+      <a style="color:azure" class="nav-item nav-link" href="/login">Login</a>
+      <% } else { %>
+         <form method="POST" action="/logout">
+           <label style="color:azure">Logged in as: <%= user.email %> </label>
+             <button type='submit' class='btn btn-outline-light'>Logout</button></form>
+         <% } %>
   </nav>
 </header>
