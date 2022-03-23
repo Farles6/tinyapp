@@ -22,7 +22,11 @@ function generateRandomString() {
   }
   return result;
 };
-
+// temperary home page
+app.get('/', (req, res) => {
+  const templateVars = { username: req.cookies['username'], urls: urlDatabase };
+  res.render('urls_index', templateVars)
+});
 
 app.get('/urls', (req, res) => {
   const templateVars = { username: req.cookies['username'], urls: urlDatabase };
@@ -39,6 +43,11 @@ app.get('/u/:shortURL', (req, res) => {
   res.redirect(longURL);
 });
 
+app.get('/register', (req, res) => {
+  const templateVars = { username: req.cookies['username'] };
+  res.render('urls_register', templateVars)
+})
+
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString()
   urlDatabase[shortURL] = req.body.longURL;
@@ -49,6 +58,10 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
 });
+
+// app.post('/register', (req, res) => {
+
+// });
 
 app.post('/login', (req, res) => {
   let user = req.body.username;
