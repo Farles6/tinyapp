@@ -61,6 +61,14 @@ app.get('/register', (req, res) => {
   res.render('urls_register', templateVars);
 });
 
+app.get('/login', (req, res) => {
+  const userId = req.cookies['user_id'];
+  const currentUser = getUser(userId, users);
+  const templateVars = { user: currentUser };
+  res.render('urls_login', templateVars)
+});
+
+
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.longURL;
@@ -90,7 +98,7 @@ const emailChecker = (email) => {
     }
   }
   return false;
-}
+};
 
 
 app.post('/register', (req, res) => {
