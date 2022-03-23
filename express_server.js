@@ -15,9 +15,9 @@ const urlDatabase = {
 };
 
 //Example of how data should look
-const users = {
+const users = {};
 
-};
+let isLoggedIn = false
 
 function generateRandomString() {
   const chars = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -27,15 +27,53 @@ function generateRandomString() {
   }
   return result;
 };
+
+/**
+ * 
+ * @param {string} userId coming from the cookies
+ * @param {object} userDb user database
+ * @returns user object
+ */
+const getUser = (userId, userDb) => {
+  if (!userDb[userId]) return null;
+  return userDb[userId];
+};
+
+const emailChecker = (email) => {
+  for (const user in users) {
+    if (users[user].email === email) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const passwordChecker = (password) => {
+  for (const user in users) {
+    if (users[user].password === password) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // temperary home page
 app.get('/', (req, res) => {
+  if (!isLoggedIn) {
+    return res.redirect('/login');
+  }
   const userId = req.cookies['user_id'];
   const currentUser = getUser(userId, users);
   const templateVars = { user: currentUser, urls: urlDatabase };
   res.render('urls_index', templateVars);
+  return res.redirect('/urls');
 });
 
 app.get('/urls', (req, res) => {
+  // if (!isLoggedIn){
+  //   return res.redirect('/login')
+  // }
+
   const userId = req.cookies['user_id'];
   const currentUser = getUser(userId, users);
   const templateVars = { user: currentUser, urls: urlDatabase };
@@ -43,6 +81,9 @@ app.get('/urls', (req, res) => {
 });
 
 app.get('/urls/new', (req, res) => {
+  if (!isLoggedIn) {
+    return res.redirect('/login');
+  }
   const userId = req.cookies['user_id'];
   const currentUser = getUser(userId, users);
   const templateVars = { user: currentUser };
@@ -76,37 +117,14 @@ app.post('/urls', (req, res) => {
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
+  if (!isLoggedIn) {
+    return res.redirect('/login');
+  }
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
 });
 
-/**
- * 
- * @param {string} userId coming from the cookies
- * @param {object} userDb user database
- * @returns user object
- */
-const getUser = (userId, userDb) => {
-  if (!userDb[userId]) return null;
-  return userDb[userId];
-};
 
-const emailChecker = (email) => {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return true;
-    }
-  }
-  return false;
-};
-const passwordChecker = (password) => {
-  for (const user in users) {
-    if (users[user].password === password) {
-      return true;
-    }
-  }
-  return false;
-};
 
 
 app.post('/register', (req, res) => {
@@ -128,6 +146,7 @@ app.post('/register', (req, res) => {
     password
   };
   res.cookie('user_id', user);
+  isLoggedIn = true;
   res.redirect('/urls');
 });
 
@@ -144,13 +163,15 @@ app.post('/login', (req, res) => {
     console.log(users[user]);
     id = users[user].id;
     res.cookie('user_id', users[user].id);
-    return res.redirect('urls');
+    isLoggedIn = true;
+    return res.redirect('/urls');
   }
 
 });
 
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
+  isLoggedIn = false;
   res.redirect('/urls');
 });
 
@@ -160,6 +181,9 @@ app.post('/urls/:shortURL', (req, res) => {
 
 
 app.get('/urls/:shortURL', (req, res) => {
+  if (!isLoggedIn) {
+    return res.redirect('/login');
+  }
   const userId = req.cookies['user_id']
   const currentUser = getUser(userId, users)
   const templateVars = { user: currentUser, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
