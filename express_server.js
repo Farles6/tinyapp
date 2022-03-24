@@ -4,11 +4,13 @@ const PORT = 8080;
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const read = require('body-parser/lib/read');
-
+const bcrypt = require('bcryptjs');
 
 app.use(cookieParser())
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
+
+
 
 const urlDatabase = {
   'b2xVn2': { 
@@ -47,22 +49,23 @@ const getUser = (userId, userDb) => {
 };
 
 const emailChecker = (email) => {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return true;
+  for (const userid in users) {
+    const user = users[userid]
+    if (user.email === email) {
+    return user;
     }
   }
-  return false;
+  return null;
 };
 
-const passwordChecker = (password) => {
-  for (const user in users) {
-    if (users[user].password === password) {
-      return true;
-    }
-  }
-  return false;
-};
+// const passwordChecker = (password) => {
+//   for (const user in users) {
+//     if (users[user].password === password) {
+//       return true;
+//     }
+//   }
+//   return false;
+// };
 
 const urlsForUser = (id) => {
   let urls = {};
@@ -145,19 +148,20 @@ app.get('/urls/:shortURL', (req, res) => {
 app.post('/login', (req, res) => {
   let id = '';
   const { email, password } = req.body;
-  if (!emailChecker(email)) {
-    return res.status(403).send('Email not found.');
+  if (!email || !password) {
+    return res.status(400).send('Email and password cannot be blank.');
   }
-  if (!passwordChecker(password)) {
-    return res.status(403).send('Incorrect password.');
-  }
-  for (const user in users) {
-    console.log(users[user]);
-    id = users[user].id;
-    res.cookie('user_id', users[user].id);
-    isLoggedIn = true;
-    return res.redirect('/urls');
-  }
+  const user = emailChecker(email)
+  if (!user){
+    return res.status(403).send('No user found');
+  }  
+console.log(user.password)
+if (!bcrypt.compareSync(password, user.password)){
+  return res.status(400).send('Passwords do not match.')
+}
+res.cookie('user_id', user.id);
+  isLoggedIn = true;
+  return res.redirect('/urls');
 
 });
 
@@ -174,15 +178,19 @@ app.post('/register', (req, res) => {
     return res.status(400).send('Email already exists');
   };
 
-  const user = generateRandomString();
+const hashedPassword = bcrypt.hashSync(password, 10)
+const user = generateRandomString();
+
   users[user] = {
     id: user,
     email,
-    password
+    password: hashedPassword,
   };
+  console.log(users)
   res.cookie('user_id', user);
   isLoggedIn = true;
   res.redirect('/urls');
+
 });
 
 app.post('/logout', (req, res) => {
