@@ -3,6 +3,7 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const read = require('body-parser/lib/read');
 
 
 app.use(cookieParser())
@@ -10,8 +11,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 
 const urlDatabase = {
-  'b2xVn2': 'http://www.lighthouselabs.ca',
-  '9sm5xK': 'http://www.google.com'
+  'b2xVn2': { 
+    longURL: 'http://www.lighthouselabs.ca',
+    userID: 'ah5jt'
+  },
+  '9sm5xK': { 
+    longURL: 'http://www.google.com',
+    userID: 'qrn5k',
+  }
 };
 
 //Example of how data should look
@@ -57,7 +64,17 @@ const passwordChecker = (password) => {
   return false;
 };
 
-// temperary home page
+const urlsForUser = (id) => {
+  let urls = {};
+  let keys = Object.keys(urlDatabase);
+  for (const key of keys){
+    if (urlDatabase[key].userID === id){
+      urls[key] = urlDatabase[key].longURL
+    }
+  }
+return urls;
+}
+
 app.get('/', (req, res) => {
   if (!isLoggedIn) {
     return res.redirect('/login');
@@ -69,30 +86,11 @@ app.get('/', (req, res) => {
   return res.redirect('/urls');
 });
 
-app.get('/urls', (req, res) => {
-  // if (!isLoggedIn){
-  //   return res.redirect('/login')
-  // }
-
-  const userId = req.cookies['user_id'];
-  const currentUser = getUser(userId, users);
-  const templateVars = { user: currentUser, urls: urlDatabase };
-  res.render('urls_index', templateVars);
-});
-
-app.get('/urls/new', (req, res) => {
-  if (!isLoggedIn) {
-    return res.redirect('/login');
-  }
+app.get('/login', (req, res) => {
   const userId = req.cookies['user_id'];
   const currentUser = getUser(userId, users);
   const templateVars = { user: currentUser };
-  res.render('urls_new', templateVars);
-});
-
-app.get('/u/:shortURL', (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
+  res.render('urls_login', templateVars)
 });
 
 app.get('/register', (req, res) => {
@@ -102,29 +100,66 @@ app.get('/register', (req, res) => {
   res.render('urls_register', templateVars);
 });
 
-app.get('/login', (req, res) => {
+app.get('/urls', (req, res) => {
+  
+  const userId = req.cookies['user_id'];
+  const userURLs = urlsForUser(userId);
+  const currentUser = getUser(userId, users);
+  const templateVars = { user: currentUser, urls: userURLs };
+  res.render('urls_index', templateVars);
+});
+
+app.get('/urls/new', (req, res) => {
+  if (!isLoggedIn) {
+    return res.send('Please log in to create URLs');
+  }
   const userId = req.cookies['user_id'];
   const currentUser = getUser(userId, users);
-  const templateVars = { user: currentUser };
-  res.render('urls_login', templateVars)
+  const templateVars = { user: currentUser, urls: urlDatabase };
+  res.render('urls_new', templateVars);
 });
 
+app.get('/u/:shortURL', (req, res) => {
+  const url = urlDatabase[req.params.shortURL];
+  if (!url){
+    return res.status(404).send('Page not found.')
+  }
+  return res.redirect(url.longURL);
+  });
 
-app.post('/urls', (req, res) => {
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
-  res.redirect(`/urls/${shortURL}`);
-});
 
-app.post('/urls/:shortURL/delete', (req, res) => {
+
+app.get('/urls/:shortURL', (req, res) => {
   if (!isLoggedIn) {
     return res.redirect('/login');
   }
-  delete urlDatabase[req.params.shortURL];
-  res.redirect('/urls');
+  const userId = req.cookies['user_id']
+  const currentUser = getUser(userId, users)
+  const templateVars = { user: currentUser, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
+  res.render('urls_show', templateVars);
 });
 
 
+//////post routes/////////
+
+app.post('/login', (req, res) => {
+  let id = '';
+  const { email, password } = req.body;
+  if (!emailChecker(email)) {
+    return res.status(403).send('Email not found.');
+  }
+  if (!passwordChecker(password)) {
+    return res.status(403).send('Incorrect password.');
+  }
+  for (const user in users) {
+    console.log(users[user]);
+    id = users[user].id;
+    res.cookie('user_id', users[user].id);
+    isLoggedIn = true;
+    return res.redirect('/urls');
+  }
+
+});
 
 
 app.post('/register', (req, res) => {
@@ -150,48 +185,41 @@ app.post('/register', (req, res) => {
   res.redirect('/urls');
 });
 
-app.post('/login', (req, res) => {
-  let id = '';
-  const { email, password } = req.body;
-  if (!emailChecker(email)) {
-    return res.status(403).send('Email not found.');
-  }
-  if (!passwordChecker(password)) {
-    return res.status(403).send('Incorrect password.');
-  }
-  for (const user in users) {
-    console.log(users[user]);
-    id = users[user].id;
-    res.cookie('user_id', users[user].id);
-    isLoggedIn = true;
-    return res.redirect('/urls');
-  }
-
-});
-
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
   isLoggedIn = false;
   res.redirect('/urls');
 });
 
-app.post('/urls/:shortURL', (req, res) => {
-  res.redirect(`/urls/${req.params.shortURL}`);
-});
-
-
-app.get('/urls/:shortURL', (req, res) => {
-  if (!isLoggedIn) {
-    return res.redirect('/login');
+app.post('/urls', (req, res) => {
+  if (!isLoggedIn){
+    res.status(403).send('please sign in first');
   }
-  const userId = req.cookies['user_id']
-  const currentUser = getUser(userId, users)
-  const templateVars = { user: currentUser, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render('urls_show', templateVars);
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: req.cookies['user_id'],
+  };
+  res.redirect(`/urls/${shortURL}`);
 });
 
+app.post('/urls/:shortURL/delete', (req, res) => {
+ if (Object.keys(urlsForUser(req.cookies['user_id'])).includes(req.params.shortURL)){
+  delete urlDatabase[req.params.shortURL];
+  res.redirect('/urls');
+ }
+ read.status(403).send('You don\'t have permission to delete URLs.')
+});
 
+app.post('/urls/:shortURL', (req, res) => {
+  if (Object.keys(urlsForUser(req.cookies['user_id'])).includes(req.params.shortURL)){
+    res.redirect(`/urls/${req.params.shortURL}`);
+   }
+   read.status(403).send('You don\'t have permission to edit URLs.')
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
+
