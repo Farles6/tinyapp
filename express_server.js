@@ -18,12 +18,14 @@ const urlDatabase = {};
 
 const users = {};
 
+//////////// get routes /////////
 
-
+// home page redirects to the login page
 app.get('/', (req, res) => {
   return res.redirect('/login');
 });
 
+// login page with email and password forms
 app.get('/login', (req, res) => {
   const userId = req.session.user_id;
   const currentUser = getUser(userId, users);
@@ -31,6 +33,7 @@ app.get('/login', (req, res) => {
   res.render('urls_login', templateVars)
 });
 
+// register page with email and password forms
 app.get('/register', (req, res) => {
   const userId = req.session.user_id;
   const currentUser = getUser(userId, users);
@@ -38,6 +41,7 @@ app.get('/register', (req, res) => {
   res.render('urls_register', templateVars);
 });
 
+// displays content of urlDatabase
 app.get('/urls', (req, res) => {
   const userId = req.session.user_id;
   const user = users[userId];
@@ -50,6 +54,7 @@ app.get('/urls', (req, res) => {
   res.render('urls_index', templateVars);
 });
 
+// page for creating new short urls
 app.get('/urls/new', (req, res) => {
   const userId = req.session.user_id;
 
@@ -61,6 +66,7 @@ app.get('/urls/new', (req, res) => {
   res.render('urls_new', templateVars);
 });
 
+// redirects to the long urls web page
 app.get('/u/:id', (req, res) => {
   const url = urlDatabase[req.params.id];
   const userId = req.session.user_id;
@@ -70,6 +76,7 @@ app.get('/u/:id', (req, res) => {
 
   return res.redirect(url.longURL);
 });
+
 
 app.get('/urls/:id', (req, res) => {
   const userId = req.session.user_id;
@@ -85,6 +92,7 @@ app.get('/urls/:id', (req, res) => {
 
 //////post routes/////////
 
+// allows you to login by entering email/password and hitting submit (if credentials match the cookies)
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -103,7 +111,7 @@ app.post('/login', (req, res) => {
   }
 });
 
-
+//allow you to register for an account by entering email/password and hitting submit
 app.post('/register', (req, res) => {
   const { email, password } = req.body;
   if (!email) {
@@ -129,10 +137,12 @@ app.post('/register', (req, res) => {
 
 });
 
+//logs you out of account and clears cookies from webpage
 app.post('/logout', (req, res) => {
   req.session = null;
   res.redirect('/urls');
 });
+
 
 app.post('/urls', (req, res) => {
   const userId = req.session.user_id;
@@ -147,6 +157,7 @@ app.post('/urls', (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
+// deletes urls from the urls page
 app.post('/urls/:id/delete', (req, res) => {
   if (!Object.keys(urlsForUser(req.session.user_id, urlDatabase)).includes(req.params.id)) {
     return res.status(403).send('You don\'t have permission to delete URLs.');
@@ -156,9 +167,12 @@ app.post('/urls/:id/delete', (req, res) => {
 });
 
 app.post('/urls/:id', (req, res) => {
+  if (!Object.keys(urlsForUser(req.session.user_id, urlDatabase)).includes(req.params.id)) {
+    return res.status(403).send('You don\'t have permission to go here.');
+  }
   return res.redirect(`/urls/${req.params.id}`);
 });
-
+// listening on port 8080
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
