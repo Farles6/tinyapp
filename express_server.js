@@ -5,6 +5,7 @@ const PORT = 8080;
 const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
+const { urlDatabase, users } = require('./database');
 
 app.use(cookieSession({
   name: 'session',
@@ -14,15 +15,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 
 
-const urlDatabase = {};
-
-const users = {};
-
 //////////// get routes /////////
 
 // home page redirects to the login page
 app.get('/', (req, res) => {
-  return res.redirect('/login');
+  const userId = req.session.user_id;
+  if (!userId){
+    return res.redirect('/login');
+  }
+  return res.redirect('/urls');
 });
 
 // login page with email and password forms
@@ -80,9 +81,9 @@ app.get('/u/:id', (req, res) => {
 
 app.get('/urls/:id', (req, res) => {
   const userId = req.session.user_id;
-
-  if (!userId) {
-    return res.status(400).send('Please <a href="/login">Login</a> ');
+  const urlEdit = urlDatabase[req.params.id];
+  if (urlEdit.userID !== userId) {
+    return res.status(400).send('You do not have permission to do that.');
   }
   const currentUser = getUser(userId, users);
   const templateVars = { user: currentUser, shortURL: req.params.id, longURL: urlDatabase[req.params.id].longURL };
@@ -167,10 +168,14 @@ app.post('/urls/:id/delete', (req, res) => {
 });
 
 app.post('/urls/:id', (req, res) => {
+  const userId = req.session.user_id;
   if (!Object.keys(urlsForUser(req.session.user_id, urlDatabase)).includes(req.params.id)) {
     return res.status(403).send('You don\'t have permission to go here.');
   }
-  return res.redirect(`/urls/${req.params.id}`);
+  const shortURL = req.params.id;
+  const longURL = req.body.longURL;
+  urlDatabase[shortURL].longURL = longURL
+  return res.redirect('/urls');
 });
 // listening on port 8080
 app.listen(PORT, () => {
