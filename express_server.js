@@ -103,12 +103,12 @@ app.post('/login', (req, res) => {
   if (!user) {
     return res.status(400).send('No user found. Please <a href="/login">try again</a>.');
   }
-    if (!bcrypt.compareSync(password, users[user].password)) {
-      return res.status(400).send('Invalid credentials. Please <a href="/login">try again</a>.');
-    }
-    req.session.user_id = users[user].id;
-    return res.redirect('/urls');
-  
+  if (!bcrypt.compareSync(password, users[user].password)) {
+    return res.status(400).send('Invalid credentials. Please <a href="/login">try again</a>.');
+  }
+  req.session.user_id = users[user].id;
+  return res.redirect('/urls');
+
 });
 
 //allow you to register for an account by entering email/password and hitting submit
