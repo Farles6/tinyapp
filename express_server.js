@@ -20,7 +20,7 @@ app.set('view engine', 'ejs');
 // home page redirects to the login page
 app.get('/', (req, res) => {
   const userId = req.session.user_id;
-  if (!userId){
+  if (!userId) {
     return res.redirect('/login');
   }
   return res.redirect('/urls');
@@ -174,7 +174,7 @@ app.post('/urls/:id', (req, res) => {
   }
   const shortURL = req.params.id;
   const longURL = req.body.longURL;
-  urlDatabase[shortURL].longURL = longURL
+  urlDatabase[shortURL].longURL = longURL;
   return res.redirect('/urls');
 });
 // listening on port 8080
